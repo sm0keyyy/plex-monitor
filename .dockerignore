@@ -1,0 +1,28 @@
+# Git
+.git/
+.gitignore
+
+# Python cache and virtual environment
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+.venv/
+
+# Logs and sensitive config
+*.log
+plex_monitor.log
+config.json
+
+# IDE / Editor specific
+.vscode/
+.idea/
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Docker specific
+Dockerfile
+.dockerignore

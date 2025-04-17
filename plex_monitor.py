@@ -11,8 +11,8 @@ import qbittorrentapi
 from qbittorrentapi.exceptions import APIConnectionError, LoginFailed, APIError
 
 # --- Configuration ---
-CONFIG_FILE = 'config.json'
-LOG_FILE = 'plex_monitor.log'
+CONFIG_FILE = os.environ.get('CONFIG_PATH', 'config.json')
+LOG_FILE = os.environ.get('LOG_PATH', 'plex_monitor.log')
 
 # --- Logging Setup ---
 logging.basicConfig(
@@ -251,6 +251,139 @@ def get_sabnzbd_status(config):
         logging.exception(f"An unexpected error occurred connecting to Sabnzbd: {e}")
         return {"status": "Error", "speed": "N/A", "queue_size": "N/A", "error": f"Unexpected: {type(e).__name__}"}
 
+def get_tautulli_status(config):
+    """Fetches status from Tautulli using its API."""
+    if not config:
+        logging.warning("Tautulli configuration missing in config.json")
+        return {"status": "Offline", "stream_count": "N/A", "total_bandwidth": "N/A", "error": "Config missing"}
+
+    base_url = config.get('url')
+    api_key = config.get('api_key')
+
+    if not base_url or not api_key or 'YOUR_TAUTULLI_' in base_url or 'YOUR_TAUTULLI_' in api_key:
+        logging.warning("Tautulli URL or API Key is missing or not configured in config.json")
+        return {"status": "Offline", "stream_count": "N/A", "total_bandwidth": "N/A", "error": "URL/API Key missing"}
+
+    # Ensure base_url doesn't end with a slash for proper joining
+    if base_url.endswith('/'):
+        base_url = base_url[:-1]
+
+    api_url = f"{base_url}/api/v2"
+    
+    # Get active sessions
+    session_params = {
+        "apikey": api_key,
+        "cmd": "get_activity"
+    }
+
+    logging.info(f"Attempting to connect to Tautulli: {base_url}")
+    try:
+        response = requests.get(api_url, params=session_params, timeout=10)
+        response.raise_for_status()
+        
+        data = response.json()
+        
+        if data.get('response', {}).get('result') != 'success':
+            error_msg = data.get('response', {}).get('message', 'Unknown API Error')
+            logging.error(f"Tautulli API error: {error_msg}")
+            return {"status": "Error", "stream_count": "N/A", "total_bandwidth": "N/A", "error": error_msg[:30]}
+        
+        # Extract activity data
+        activity = data.get('response', {}).get('data', {})
+        stream_count = activity.get('stream_count', 0)
+        total_bandwidth = activity.get('total_bandwidth', 0)
+        
+        # Format bandwidth (convert bits/s to appropriate unit)
+        if total_bandwidth < 1024:
+            bandwidth_str = f"{total_bandwidth} kbps"
+        elif total_bandwidth < 1024 * 1024:
+            bandwidth_str = f"{total_bandwidth / 1024:.1f} Mbps"
+        else:
+            bandwidth_str = f"{total_bandwidth / (1024 * 1024):.1f} Gbps"
+        
+        logging.info(f"Tautulli connection successful. Streams: {stream_count}, Bandwidth: {bandwidth_str}")
+        return {
+            "status": "Online",
+            "stream_count": stream_count,
+            "total_bandwidth": bandwidth_str,
+            "error": None
+        }
+        
+    except ReqConnectionError:
+        logging.error(f"Tautulli connection failed: Could not connect to {base_url}.")
+        return {"status": "Offline", "stream_count": "N/A", "total_bandwidth": "N/A", "error": "Connection failed"}
+    except requests.exceptions.Timeout:
+        logging.error(f"Tautulli connection failed: Timeout connecting to {base_url}.")
+        return {"status": "Offline", "stream_count": "N/A", "total_bandwidth": "N/A", "error": "Timeout"}
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 401:
+            logging.error("Tautulli connection failed: Unauthorized (Invalid API Key?).")
+            return {"status": "Error", "stream_count": "N/A", "total_bandwidth": "N/A", "error": "Unauthorized"}
+        else:
+            logging.error(f"Tautulli connection failed: HTTP Error {e.response.status_code}")
+            return {"status": "Error", "stream_count": "N/A", "total_bandwidth": "N/A", "error": f"HTTP {e.response.status_code}"}
+    except Exception as e:
+        logging.exception(f"An unexpected error occurred connecting to Tautulli: {e}")
+        return {"status": "Error", "stream_count": "N/A", "total_bandwidth": "N/A", "error": f"Unexpected: {type(e).__name__}"}
+
+def get_overseerr_status(config):
+    """Fetches status from Overseerr using its API."""
+    if not config:
+        logging.warning("Overseerr configuration missing in config.json")
+        return {"status": "Offline", "pending_requests": "N/A", "error": "Config missing"}
+
+    base_url = config.get('url')
+    api_key = config.get('api_key')
+
+    if not base_url or not api_key or 'YOUR_OVERSEERR_' in base_url or 'YOUR_OVERSEERR_' in api_key:
+        logging.warning("Overseerr URL or API Key is missing or not configured in config.json")
+        return {"status": "Offline", "pending_requests": "N/A", "error": "URL/API Key missing"}
+
+    # Ensure base_url doesn't end with a slash for proper joining
+    if base_url.endswith('/'):
+        base_url = base_url[:-1]
+
+    # Get pending requests count
+    requests_url = f"{base_url}/api/v1/request?filter=pending&take=1"
+    
+    logging.info(f"Attempting to connect to Overseerr: {base_url}")
+    try:
+        headers = {
+            "X-Api-Key": api_key
+        }
+        
+        response = requests.get(requests_url, headers=headers, timeout=10)
+        response.raise_for_status()
+        
+        data = response.json()
+        
+        # Extract pending requests count
+        pending_count = data.get('pageInfo', {}).get('results', 0)
+        
+        logging.info(f"Overseerr connection successful. Pending requests: {pending_count}")
+        return {
+            "status": "Online",
+            "pending_requests": pending_count,
+            "error": None
+        }
+        
+    except ReqConnectionError:
+        logging.error(f"Overseerr connection failed: Could not connect to {base_url}.")
+        return {"status": "Offline", "pending_requests": "N/A", "error": "Connection failed"}
+    except requests.exceptions.Timeout:
+        logging.error(f"Overseerr connection failed: Timeout connecting to {base_url}.")
+        return {"status": "Offline", "pending_requests": "N/A", "error": "Timeout"}
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 401:
+            logging.error("Overseerr connection failed: Unauthorized (Invalid API Key?).")
+            return {"status": "Error", "pending_requests": "N/A", "error": "Unauthorized"}
+        else:
+            logging.error(f"Overseerr connection failed: HTTP Error {e.response.status_code}")
+            return {"status": "Error", "pending_requests": "N/A", "error": f"HTTP {e.response.status_code}"}
+    except Exception as e:
+        logging.exception(f"An unexpected error occurred connecting to Overseerr: {e}")
+        return {"status": "Error", "pending_requests": "N/A", "error": f"Unexpected: {type(e).__name__}"}
+
 def get_qbittorrent_status(config):
     """Fetches status from qBittorrent using qbittorrent-api."""
     if not config:
@@ -356,7 +489,9 @@ def format_discord_message(statuses):
         "radarr": "🎥",
         "sonarr": "📺",
         "sabnzbd": "💾",
-        "qbittorrent": "🔄"
+        "qbittorrent": "🔄",
+        "tautulli": "📊",
+        "overseerr": "🔍"
     }
 
     for service, data in statuses.items():
@@ -384,6 +519,11 @@ def format_discord_message(statuses):
                 details.append(f"DL: {data.get('download_speed', 'N/A')}")
                 details.append(f"UL: {data.get('upload_speed', 'N/A')}")
                 details.append(f"Active: {data.get('active_torrents', 'N/A')}")
+            elif service == "tautulli":
+                details.append(f"Streams: {data.get('stream_count', 'N/A')}")
+                details.append(f"Bandwidth: {data.get('total_bandwidth', 'N/A')}")
+            elif service == "overseerr":
+                details.append(f"Pending: {data.get('pending_requests', 'N/A')}")
 
             value = f"Status:🟢 {status_text}\n" + "\n".join(details)
 
@@ -475,6 +615,8 @@ def main():
             "sonarr": get_sonarr_status(config.get('services', {}).get('sonarr')),
             "sabnzbd": get_sabnzbd_status(config.get('services', {}).get('sabnzbd')),
             "qbittorrent": get_qbittorrent_status(config.get('services', {}).get('qbittorrent')),
+            "tautulli": get_tautulli_status(config.get('services', {}).get('tautulli')),
+            "overseerr": get_overseerr_status(config.get('services', {}).get('overseerr')),
         }
 
         message_data = format_discord_message(statuses)

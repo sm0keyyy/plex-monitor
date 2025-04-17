@@ -22,6 +22,14 @@
       "url": "http://YOUR_QBITTORRENT_IP:8080",
       "username": "YOUR_QBITTORRENT_USERNAME",
       "password": "YOUR_QBITTORRENT_PASSWORD"
+    },
+    "tautulli": {
+      "url": "http://YOUR_TAUTULLI_IP:8181",
+      "api_key": "YOUR_TAUTULLI_API_KEY"
+    },
+    "overseerr": {
+      "url": "http://YOUR_OVERSEERR_IP:5055",
+      "api_key": "YOUR_OVERSEERR_API_KEY"
     }
   }
 }

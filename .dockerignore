@@ -9,15 +9,22 @@ __pycache__/
 *.pyd
 venv/
 .venv/
+env/
+ENV/
+env.bak/
+venv.bak/
 
 # Logs and sensitive config
 *.log
-plex_monitor.log
+logs/
+config/
 config.json
 
 # IDE / Editor specific
 .vscode/
 .idea/
+*.swp
+*.swo
 
 # OS specific
 .DS_Store
@@ -26,3 +33,8 @@ Thumbs.db
 # Docker specific
 Dockerfile
 .dockerignore
+docker-compose.yml
+
+# Test files
+tests/
+test_*.py

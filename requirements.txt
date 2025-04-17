@@ -1,4 +1,10 @@
-requests
-plexapi
-pyarr
-qbittorrent-api
+# Core dependencies
+requests>=2.28.0
+plexapi>=4.13.0
+pyarr>=4.0.0
+qbittorrent-api>=2023.3.44
+
+# Testing dependencies
+pytest>=7.3.1
+pytest-cov>=4.1.0
+pytest-mock>=3.10.0

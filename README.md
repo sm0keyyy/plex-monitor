@@ -76,14 +76,14 @@ The `config.json` file holds all the necessary settings:
 
 *   `discord_webhook_url`: **Required**. The URL for your Discord webhook.
 *   `update_interval_seconds`: Optional (defaults to 60). The time between status checks.
-*   `services`: Contains nested objects for each service with its specific connection details (URL, API keys/tokens, username/password). Fill in the details only for the services you want to monitor. *(Note: API interaction is not yet implemented)*.
+*   `services`: Contains nested objects for each service with its specific connection details (URL, API keys/tokens, username/password). Fill in the details for the services you want to monitor.
 
 **Important:** Keep your `config.json` file secure and do not commit it to version control, as it contains sensitive information. The `.gitignore` file is already configured to prevent this.
 
 ## Future Work
 
-*   Implement actual API calls to fetch real-time data from each service.
-*   Add more detailed status information for each service.
-*   Improve error handling and reporting.
+*   Add more detailed status information for each service (e.g., specific download names, Plex stream details).
+*   Improve error handling and reporting granularity.
 *   Add Dockerfile for containerization.
-*   Consider adding support for other related services.
+*   Consider adding support for other related services (e.g., Tautulli, Overseerr).
+*   Add options for customizing the Discord embed appearance.

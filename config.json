@@ -1,0 +1,27 @@
+{
+  "discord_webhook_url": "YOUR_DISCORD_WEBHOOK_URL_HERE",
+  "update_interval_seconds": 60,
+  "services": {
+    "plex": {
+      "url": "http://YOUR_PLEX_IP:32400",
+      "token": "YOUR_PLEX_TOKEN"
+    },
+    "radarr": {
+      "url": "http://YOUR_RADARR_IP:7878",
+      "api_key": "YOUR_RADARR_API_KEY"
+    },
+    "sonarr": {
+      "url": "http://YOUR_SONARR_IP:8989",
+      "api_key": "YOUR_SONARR_API_KEY"
+    },
+    "sabnzbd": {
+      "url": "http://YOUR_SABNZBD_IP:8080",
+      "api_key": "YOUR_SABNZBD_API_KEY"
+    },
+    "qbittorrent": {
+      "url": "http://YOUR_QBITTORRENT_IP:8080",
+      "username": "YOUR_QBITTORRENT_USERNAME",
+      "password": "YOUR_QBITTORRENT_PASSWORD"
+    }
+  }
+}
